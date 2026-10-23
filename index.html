@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#111210">
+    <meta name="description" content="Compose a fresh piece of sheet music with AI, then play it right in your browser.">
+    <title>muse — make a little music</title>
+    <link rel="icon" type="image/svg+xml" href="public/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Muse home">
+          <img class="brand-logo" src="public/logo.svg" alt="" aria-hidden="true">
+          <span>muse<span class="brand-period">.</span></span>
+        </a>
+        <div class="topbar-note"><span class="live-dot"></span> A tiny studio for big ideas</div>
+        <button class="settings-toggle" id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings-panel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z"/><path d="m19.4 13.5 1.2.95-1.6 2.77-1.47-.56a7.9 7.9 0 0 1-1.36.78l-.27 1.55h-3.2l-.27-1.55a7.9 7.9 0 0 1-1.36-.78l-1.47.56L8 14.45l1.2-.95a7.9 7.9 0 0 1 0-1.56L8 11l1.6-2.77 1.47.56a7.9 7.9 0 0 1 1.36-.78l.27-1.55h3.2l.27 1.55a7.9 7.9 0 0 1 1.36.78l1.47-.56 1.6 2.77-1.2.94a7.9 7.9 0 0 1 0 1.56Z"/></svg>
+          <span>Settings</span>
+        </button>
+      </header>
+
+      <main>
+        <section class="composer-card" aria-labelledby="composer-title">
+          <div class="composer-heading">
+            <div>
+              <div class="section-kicker">02 — THE STARTING POINT</div>
+              <h2 id="composer-title">Give your music a little direction</h2>
+            </div>
+            <span class="optional-label">You can be vague.</span>
+          </div>
+          <label class="sr-only" for="prompt">Describe the music you want to create</label>
+          <textarea id="prompt" rows="3" maxlength="500" placeholder="A slow piano melody for watching rain roll down a window…"></textarea>
+          <div class="prompt-footer">
+            <span class="character-count" id="character-count">0 / 500</span>
+          </div>
+          <div class="composer-controls">
+            <label class="select-control">
+              <span class="control-label">MOOD</span>
+              <select id="mood">
+                <option value="">Let AI choose</option>
+                <option value="calm and peaceful">Calm</option>
+                <option value="dreamy and wistful">Dreamy</option>
+                <option value="joyful and playful">Joyful</option>
+                <option value="bittersweet and reflective">Bittersweet</option>
+                <option value="mysterious and atmospheric">Mysterious</option>
+                <option value="hopeful and uplifting">Hopeful</option>
+                <option value="dramatic and cinematic">Cinematic</option>
+              </select>
+            </label>
+            <label class="select-control">
+              <span class="control-label">DIFFICULTY</span>
+              <select id="difficulty">
+                <option value="beginner" selected>Beginner</option>
+                <option value="easy">Easy</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+                <option value="expert">Expert</option>
+              </select>
+            </label>
+            <div class="range-control">
+              <label class="control-label" for="bar-count">BARS</label>
+              <span class="range-row">
+                <input class="bar-count-input" id="bar-count" type="number" min="4" max="100" step="1" value="4" aria-label="Bars">
+                <label class="auto-length-toggle" for="auto-length">
+                  <input id="auto-length" type="checkbox">
+                  <span>Auto</span>
+                </label>
+              </span>
+            </div>
+            <label class="select-control">
+              <span class="control-label">INSTRUMENT</span>
+              <select id="instrument">
+                <option value="piano">Piano</option>
+                <option value="acoustic guitar">Acoustic guitar</option>
+                <option value="violin">Violin</option>
+                <option value="cello">Cello</option>
+                <option value="flute">Flute</option>
+                <option value="soprano recorder">Soprano Recorder</option>
+                <option value="clarinet">Clarinet</option>
+                <option value="trumpet">Trumpet</option>
+                <option value="saxophone">Saxophone</option>
+                <option value="harp">Harp</option>
+              </select>
+            </label>
+            <label class="select-control tempo-control">
+              <span class="control-label">TEMPO</span>
+              <select id="tempo">
+                <option value="">Any tempo</option>
+                <option value="60">60 BPM · Largo</option>
+                <option value="72">72 BPM · Adagio</option>
+                <option value="84">84 BPM · Andante</option>
+                <option value="96">96 BPM · Moderato</option>
+                <option value="108">108 BPM · Allegretto</option>
+                <option value="120">120 BPM · Allegro</option>
+                <option value="132">132 BPM · Vivace</option>
+                <option value="144">144 BPM · Presto</option>
+              </select>
+            </label>
+          </div>
+          <div class="generate-action">
+            <button class="generate-button" id="generate-button" type="button">
+              <span class="generate-icon" aria-hidden="true">✳</span>
+              <span id="generate-label">Make me a score</span>
+              <span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+          </div>
+          <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="score-section" id="score-section" aria-labelledby="score-title">
+          <div class="score-topline">
+            <div>
+              <h2 id="score-title">A Window Full of Rain</h2>
+            </div>
+            <div class="score-actions">
+              <button class="icon-button fullscreen-button" id="fullscreen-button" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></svg>
+                <span>Fullscreen</span>
+              </button>
+              <button class="icon-button" id="download-button" type="button" aria-label="Download score as SVG" title="Download score as SVG">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
+              </button>
+              <label class="playback-instrument-control">
+                <span class="sr-only">Playback instrument</span>
+                <select id="playback-instrument" aria-label="Playback instrument"></select>
+              </label>
+              <button class="play-button" id="play-button" type="button">
+                <svg class="play-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M6.5 4.4v11.2L15 10z"/></svg>
+                <svg class="pause-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.5h3v11H6zm5 0h3v11h-3z"/></svg>
+                <span id="play-label">Play</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="score-library">
+            <button class="save-score-button" id="save-score-button" type="button">Save score</button>
+            <label class="sr-only" for="saved-scores">Saved scores</label>
+            <select id="saved-scores" aria-label="Saved scores">
+              <option value="">Saved scores</option>
+            </select>
+            <button class="remove-score-button" id="remove-score-button" type="button" aria-label="Remove selected saved score" disabled>Remove</button>
+            <span class="saved-scores-status" id="saved-scores-status" role="status" aria-live="polite"></span>
+          </div>
+
+          <div class="score-workspace">
+            <aside class="transpose-panel" aria-labelledby="transpose-label">
+              <label class="transpose-label" id="transpose-label" for="transpose">TRANSPOSE</label>
+              <output class="transpose-value" id="transpose-value" for="transpose">0 st</output>
+              <span class="transpose-endpoint" aria-hidden="true">+12</span>
+              <input class="transpose-slider" id="transpose" type="range" min="-12" max="12" step="1" value="0" aria-label="Transpose semitones">
+              <span class="transpose-endpoint" aria-hidden="true">-12</span>
+              <button class="transpose-reset" id="transpose-reset" type="button">Reset</button>
+            </aside>
+
+            <article class="score-paper">
+              <div class="score-meta">
+                <div>
+                  <p id="piece-subtitle">A small piano sketch <span aria-hidden="true">·</span> ready to play</p>
+                </div>
+                <span class="score-badge"><span class="badge-dot"></span><span id="score-status">STARTER SCORE</span></span>
+              </div>
+              <div class="score-scroll" id="score-scroll">
+                <div class="score-canvas" id="score-canvas" aria-label="Sheet music score"></div>
+              </div>
+              <div class="paper-footer">
+                <span><span class="footer-note">♪</span> Generated for a curious mind</span>
+                <span id="score-details">C major <span aria-hidden="true">·</span> 4/4 <span aria-hidden="true">·</span> 76 BPM</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="settings-panel" id="settings-panel" hidden aria-labelledby="settings-title">
+          <div class="settings-panel-heading">
+            <div>
+              <div class="section-kicker">CONNECT YOUR MODEL</div>
+              <h2 id="settings-title">OpenRouter settings</h2>
+            </div>
+            <button class="close-settings" id="close-settings" type="button" aria-label="Close settings">×</button>
+          </div>
+          <p>Your key is saved in this browser’s local storage and sent only to OpenRouter when generating. Local storage isn’t encrypted; use this on a trusted device.</p>
+          <label class="settings-field" for="api-key">
+            <span>API key</span>
+            <input id="api-key" type="password" autocomplete="off" placeholder="sk-or-v1-…" spellcheck="false">
+          </label>
+          <label class="settings-field" for="model">
+            <span>Model</span>
+            <select id="model">
+              <optgroup label="Popular OpenRouter models">
+                <option value="deepseek/deepseek-v4.1-flash" selected>DeepSeek V4.1 Flash</option>
+                <option value="z-ai/glm-5.3-flash">GLM 5.3 Flash</option>
+                <option value="xiaomi/mimo-v2.6-flash">MiMo V2.6 Flash</option>
+                <option value="stepfun/step-5-preview">Step 5 Preview</option>
+                <option value="tencent/hy4-preview">Hy4 Preview</option>
+                <option value="anthropic/claude-opus-5.5">Claude Opus 5.5</option>
+                <option value="openai/gpt-6-luna">GPT-6 Luna</option>
+                <option value="nvidia/nemotron-3-ultra-550b-a55b">Nemotron 3 Ultra</option>
+                <option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash</option>
+                <option value="moonshotai/kimi-k3.1-pro">Kimi K3.1 Pro</option>
+              </optgroup>
+            </select>
+          </label>
+          <div class="settings-actions">
+            <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">Get an OpenRouter key ↗</a>
+            <button class="save-settings" id="save-settings" type="button">Save key</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <span>Made for the moment before the music.</span>
+        <span>muse<span class="brand-period">.</span> <span id="current-year"></span></span>
+      </footer>
+    </div>
+  </body>
+</html>
