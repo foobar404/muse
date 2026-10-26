@@ -60,7 +60,7 @@ const elements = {
   canvas: document.querySelector("#score-canvas"),
   scoreScroll: document.querySelector("#score-scroll"),
   scoreSection: document.querySelector("#score-section"),
-  fullscreenButton: document.querySelector("#fullscreen-button"),
+  scoreFocusToggle: document.querySelector("#score-focus-toggle"),
   scoreTitle: document.querySelector("#score-title"),
   pieceSubtitle: document.querySelector("#piece-subtitle"),
   scoreStatus: document.querySelector("#score-status"),
@@ -90,6 +90,7 @@ let playbackTimer;
 let playbackEndTimer;
 let playbackToken = 0;
 let activeOscillators = [];
+let scoreLayoutRefreshPending = false;
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({
@@ -232,6 +233,7 @@ function renderCurrentScore() {
   currentScore = transposeScore(baseScore, transposeSemitones);
   elements.transposeValue.textContent = `${transposeSemitones > 0 ? "+" : ""}${transposeSemitones} st`;
   renderScore(currentScore, currentInstrument, currentStatusLabel);
+  scoreLayoutRefreshPending = false;
 }
 
 function validateScore(score, expectedBars, expectedTempo = null) {
@@ -399,6 +401,10 @@ async function generateScore() {
     elements.playbackInstrument.value = instrument;
     currentStatusLabel = "AI COMPOSITION";
     renderCurrentScore();
+    elements.scoreSection.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    });
     setStatus("");
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Couldn't generate a score. Please try again.", true);
@@ -415,10 +421,18 @@ function pitchPosition(pitch) {
   return (Number(match[3]) - 4) * 7 + diatonicIndex - 2;
 }
 
+function getScoreLayout(availableWidth) {
+  const width = Math.max(220, Math.round(availableWidth));
+  const compact = width < 440;
+  const maxBarStart = compact ? 106 : 175;
+  const rightPadding = compact ? 12 : 24;
+  const barsPerSystem = Math.max(1, Math.min(4, Math.floor((width - maxBarStart - rightPadding) / 112)));
+  return { width, compact, barsPerSystem };
+}
+
 function renderScore(score, instrument, statusLabel) {
   const barCount = score.bars.length;
-  const width = 980;
-  const barsPerSystem = 4;
+  const { width, compact, barsPerSystem } = getScoreLayout(elements.canvas.clientWidth);
   const systemCount = Math.ceil(barCount / barsPerSystem);
   const systemHeight = 132;
   const height = systemCount * systemHeight + 12;
@@ -427,10 +441,14 @@ function renderScore(score, instrument, statusLabel) {
   const bottomLine = staffTop + lineGap * 4;
   const systemsSvg = [];
   const signatureCount = Math.abs(KEY_SIGNATURES[score.key.toLowerCase()]);
-  const signatureStart = 64;
-  const meterX = signatureStart + signatureCount * 10 + 5;
-  const barStart = Math.max(112, meterX + 36);
-  const barWidth = (width - barStart - 24) / barsPerSystem;
+  const signatureStart = compact ? 40 : 64;
+  const signatureSpacing = compact ? 6 : 10;
+  const meterX = signatureStart + signatureCount * signatureSpacing + (compact ? 6 : 5);
+  const barStart = compact ? Math.max(96, meterX + 18) : Math.max(112, meterX + 36);
+  const rightPadding = compact ? 12 : 24;
+  const barWidth = (width - barStart - rightPadding) / barsPerSystem;
+  const noteInset = compact ? 8 : 12;
+  const staffStart = compact ? 34 : 58;
   const signaturePositions = KEY_SIGNATURES[score.key.toLowerCase()] >= 0
     ? [8, 5, 9, 6, 3, 7, 4]
     : [4, 7, 3, 6, 2, 5, 1];
@@ -442,16 +460,16 @@ function renderScore(score, instrument, statusLabel) {
     const lastBar = Math.min(firstBar + barsPerSystem, barCount);
     for (let line = 0; line < 5; line++) {
       const y = staffTop + line * lineGap;
-      systemElements.push(`<line class="staff-line" x1="58" y1="${y}" x2="${width - 20}" y2="${y}"/>`);
+      systemElements.push(`<line class="staff-line" x1="${staffStart}" y1="${y}" x2="${width - rightPadding}" y2="${y}"/>`);
     }
-    systemElements.push(`<text class="music-text" x="24" y="${staffTop + 45}" font-size="65">𝄞</text>`);
+    systemElements.push(`<text class="music-text" x="${compact ? 3 : 24}" y="${staffTop + 45}" font-size="${compact ? 44 : 65}">𝄞</text>`);
     for (let index = 0; index < signatureCount; index++) {
       const accidental = KEY_SIGNATURES[score.key.toLowerCase()] > 0 ? "♯" : "♭";
       const accidentalY = bottomLine - signaturePositions[index] * (lineGap / 2);
-      systemElements.push(`<text class="music-text" x="${signatureStart + index * 10}" y="${accidentalY + 5}" font-size="16">${accidental}</text>`);
+      systemElements.push(`<text class="music-text" x="${signatureStart + index * signatureSpacing}" y="${accidentalY + 5}" font-size="${compact ? 13 : 16}">${accidental}</text>`);
     }
-    systemElements.push(`<text class="music-text" x="${meterX}" y="${staffTop + 13}" font-size="20">${escapeHtml(score.timeSignature.split("/")[0])}</text>`);
-    systemElements.push(`<text class="music-text" x="${meterX}" y="${staffTop + 31}" font-size="20">${escapeHtml(score.timeSignature.split("/")[1])}</text>`);
+    systemElements.push(`<text class="music-text" x="${meterX}" y="${staffTop + 13}" font-size="${compact ? 16 : 20}">${escapeHtml(score.timeSignature.split("/")[0])}</text>`);
+    systemElements.push(`<text class="music-text" x="${meterX}" y="${staffTop + 31}" font-size="${compact ? 16 : 20}">${escapeHtml(score.timeSignature.split("/")[1])}</text>`);
     systemElements.push(`<line class="bar-line" x1="${barStart}" y1="${staffTop}" x2="${barStart}" y2="${bottomLine}"/>`);
 
     for (let barIndex = firstBar; barIndex < lastBar; barIndex++) {
@@ -463,7 +481,7 @@ function renderScore(score, instrument, statusLabel) {
       let elapsedEighths = 0;
       bar.notes.forEach((note) => {
         const duration = noteDuration(note.duration);
-        const x = xLeft + 12 + ((elapsedEighths + duration) / 8) * (barWidth - 24);
+        const x = xLeft + noteInset + ((elapsedEighths + duration) / 8) * (barWidth - noteInset * 2);
         elapsedEighths += duration * 2;
         const position = note.pitch === "rest" ? null : pitchPosition(note.pitch);
         const y = position === null ? staffTop + lineGap * 2 : bottomLine - position * (lineGap / 2);
@@ -480,7 +498,7 @@ function renderScore(score, instrument, statusLabel) {
         const accidental = showAccidental
           ? pitchParts[2] === "#" ? "♯" : pitchParts[2] === "b" ? "♭" : "♮"
           : "";
-        if (accidental) systemElements.push(`<text class="music-text" x="${noteX - 12}" y="${y + 4}" font-size="14">${accidental}</text>`);
+        if (accidental) systemElements.push(`<text class="music-text" x="${noteX - 12}" y="${y + 4}" font-size="${compact ? 12 : 14}">${accidental}</text>`);
         for (let ledgerPosition = 6; ledgerPosition <= position; ledgerPosition += 2) {
           const ledgerY = bottomLine - ledgerPosition * (lineGap / 2);
           systemElements.push(`<line class="ledger-line" x1="${noteX - 7}" y1="${ledgerY}" x2="${noteX + 7}" y2="${ledgerY}"/>`);
@@ -490,7 +508,7 @@ function renderScore(score, instrument, statusLabel) {
           systemElements.push(`<line class="ledger-line" x1="${noteX - 7}" y1="${ledgerY}" x2="${noteX + 7}" y2="${ledgerY}"/>`);
         }
         const filled = note.duration !== "whole" && note.duration !== "half";
-        systemElements.push(`<ellipse class="note-head" cx="${noteX}" cy="${y}" rx="5.4" ry="3.8" transform="rotate(-18 ${noteX} ${y})" fill="${filled ? "#25251f" : "#f5f2e9"}" ${filled ? "" : 'stroke-width="1.5"'}/>`);
+        systemElements.push(`<ellipse class="note-head" cx="${noteX}" cy="${y}" rx="${compact ? 4.6 : 5.4}" ry="${compact ? 3.4 : 3.8}" transform="rotate(-18 ${noteX} ${y})" fill="${filled ? "#25251f" : "#f5f2e9"}" ${filled ? "" : 'stroke-width="1.5"'}/>`);
         if (note.duration !== "whole") {
           const stemDown = position >= 4;
           const stemX = stemDown ? noteX - 5 : noteX + 5;
@@ -513,6 +531,7 @@ function renderScore(score, instrument, statusLabel) {
   elements.canvas.dataset.width = String(width);
   elements.canvas.dataset.height = String(height);
   elements.canvas.dataset.barsPerSystem = String(barsPerSystem);
+  elements.canvas.dataset.compactLayout = String(compact);
   elements.canvas.dataset.barStart = String(barStart);
   elements.canvas.dataset.barWidth = String(barWidth);
   elements.canvas.dataset.systemCount = String(systemCount);
@@ -661,6 +680,7 @@ function stopPlayback() {
     playhead.setAttribute("x1", String(start));
     playhead.setAttribute("x2", String(start));
   });
+  if (scoreLayoutRefreshPending) renderCurrentScore();
 }
 
 async function playScore() {
@@ -816,27 +836,22 @@ elements.savedScores.addEventListener("change", () => {
   elements.removeScoreButton.disabled = elements.savedScores.value === "";
   if (elements.savedScores.value) loadSelectedScore();
 });
-elements.fullscreenButton.addEventListener("click", async () => {
-  if (!document.fullscreenEnabled) {
-    setStatus("Fullscreen mode is not available in this browser.", true);
-    return;
-  }
-  try {
-    if (document.fullscreenElement === elements.scoreSection) {
-      await document.exitFullscreen();
-    } else {
-      await elements.scoreSection.requestFullscreen();
-    }
-  } catch (error) {
-    setStatus(error instanceof Error ? `Fullscreen unavailable: ${error.message}` : "Fullscreen mode could not be opened.", true);
-  }
+function setScoreFocusMode(isFocused) {
+  document.body.classList.toggle("score-focus-mode", isFocused);
+  elements.scoreFocusToggle.setAttribute("aria-pressed", String(isFocused));
+  const label = isFocused ? "Close focused score" : "Show score only";
+  elements.scoreFocusToggle.querySelector("span").textContent = isFocused ? "Close" : "Focus score";
+  elements.scoreFocusToggle.setAttribute("aria-label", label);
+  elements.scoreFocusToggle.setAttribute("title", label);
+}
+elements.scoreFocusToggle.addEventListener("click", () => {
+  setScoreFocusMode(!document.body.classList.contains("score-focus-mode"));
 });
-document.addEventListener("fullscreenchange", () => {
-  const isFullscreen = document.fullscreenElement === elements.scoreSection;
-  const label = isFullscreen ? "Exit fullscreen" : "Fullscreen";
-  elements.fullscreenButton.querySelector("span").textContent = label;
-  elements.fullscreenButton.setAttribute("aria-label", isFullscreen ? "Exit fullscreen" : "Enter fullscreen");
-  elements.fullscreenButton.setAttribute("title", isFullscreen ? "Exit fullscreen" : "Enter fullscreen");
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && document.body.classList.contains("score-focus-mode")) {
+    setScoreFocusMode(false);
+    elements.scoreFocusToggle.focus();
+  }
 });
 elements.settingsToggle.addEventListener("click", () => {
   const opening = elements.settingsPanel.hidden;
@@ -866,6 +881,18 @@ document.addEventListener("keydown", (event) => {
     generateScore();
   }
 });
+
+const scoreLayoutObserver = new ResizeObserver(() => {
+  const layout = getScoreLayout(elements.canvas.clientWidth);
+  const compactLayout = elements.canvas.dataset.compactLayout === "true";
+  if (layout.barsPerSystem === Number(elements.canvas.dataset.barsPerSystem) && layout.compact === compactLayout) return;
+  if (elements.playButton.classList.contains("is-playing")) {
+    scoreLayoutRefreshPending = true;
+    return;
+  }
+  renderCurrentScore();
+});
+scoreLayoutObserver.observe(elements.scoreScroll);
 
 document.querySelector("#current-year").textContent = String(new Date().getFullYear());
 loadApiKey();

@@ -20,9 +20,13 @@
           <img class="brand-logo" src="public/logo.svg" alt="" aria-hidden="true">
           <span>muse<span class="brand-period">.</span></span>
         </a>
-        <div class="topbar-note"><span class="live-dot"></span> A tiny studio for big ideas</div>
         <button class="settings-toggle" id="settings-toggle" type="button" aria-expanded="false" aria-controls="settings-panel">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z"/><path d="m19.4 13.5 1.2.95-1.6 2.77-1.47-.56a7.9 7.9 0 0 1-1.36.78l-.27 1.55h-3.2l-.27-1.55a7.9 7.9 0 0 1-1.36-.78l-1.47.56L8 14.45l1.2-.95a7.9 7.9 0 0 1 0-1.56L8 11l1.6-2.77 1.47.56a7.9 7.9 0 0 1 1.36-.78l.27-1.55h3.2l.27 1.55a7.9 7.9 0 0 1 1.36.78l1.47-.56 1.6 2.77-1.2.94a7.9 7.9 0 0 1 0 1.56Z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 6h8m4 0h4M4 12h3m4 0h9M4 18h10m4 0h2"/>
+            <circle cx="14" cy="6" r="2"/>
+            <circle cx="9" cy="12" r="2"/>
+            <circle cx="16" cy="18" r="2"/>
+          </svg>
           <span>Settings</span>
         </button>
       </header>
@@ -117,14 +121,15 @@
 
         <section class="score-section" id="score-section" aria-labelledby="score-title">
           <div class="score-topline">
-            <div>
+            <div class="score-heading">
               <h2 id="score-title">A Window Full of Rain</h2>
             </div>
             <div class="score-actions">
-              <button class="icon-button fullscreen-button" id="fullscreen-button" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></svg>
-                <span>Fullscreen</span>
-              </button>
+            <button class="icon-button score-focus-toggle" id="score-focus-toggle" type="button" aria-label="Show score only" title="Show score only" aria-pressed="false">
+              <svg class="focus-open-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></svg>
+              <svg class="focus-close-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              <span>Focus score</span>
+            </button>
               <button class="icon-button" id="download-button" type="button" aria-label="Download score as SVG" title="Download score as SVG">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
               </button>
